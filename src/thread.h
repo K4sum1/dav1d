@@ -106,27 +106,28 @@ static inline int pthread_mutex_unlock(pthread_mutex_t *const mutex) {
 static inline int pthread_cond_init(pthread_cond_t *const cond,
                                     const void *const attr)
 {
-    InitializeConditionVariable(cond);
+    *(HANDLE*)cond = CreateEvent(NULL, FALSE, FALSE, NULL);
     return 0;
 }
 
 static inline int pthread_cond_destroy(pthread_cond_t *const cond) {
+    CloseHandle(*(HANDLE*)cond);
     return 0;
 }
 
 static inline int pthread_cond_wait(pthread_cond_t *const cond,
                                     pthread_mutex_t *const mutex)
 {
-    return !SleepConditionVariableCS(cond, mutex, INFINITE);
+    return WaitForSingleObject(*(HANDLE*)cond, INFINITE) == WAIT_OBJECT_0? 0 : -1;
 }
 
 static inline int pthread_cond_signal(pthread_cond_t *const cond) {
-    WakeConditionVariable(cond);
+    SetEvent(*(HANDLE*)cond);
     return 0;
 }
 
 static inline int pthread_cond_broadcast(pthread_cond_t *const cond) {
-    WakeAllConditionVariable(cond);
+    SetEvent(*(HANDLE*)cond);
     return 0;
 }
 
