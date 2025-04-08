@@ -46,7 +46,7 @@ typedef struct {
     unsigned stack_size;
 } pthread_attr_t;
 
-typedef SRWLOCK pthread_mutex_t;
+typedef CRITICAL_SECTION pthread_mutex_t;
 typedef CONDITION_VARIABLE pthread_cond_t;
 typedef INIT_ONCE pthread_once_t;
 
@@ -84,21 +84,22 @@ static inline int pthread_attr_setstacksize(pthread_attr_t *const attr,
 static inline int pthread_mutex_init(pthread_mutex_t *const mutex,
                                      const void *const attr)
 {
-    InitializeSRWLock(mutex);
+    InitializeCriticalSection(mutex);
     return 0;
 }
 
 static inline int pthread_mutex_destroy(pthread_mutex_t *const mutex) {
+    DeleteCriticalSection(mutex);
     return 0;
 }
 
 static inline int pthread_mutex_lock(pthread_mutex_t *const mutex) {
-    AcquireSRWLockExclusive(mutex);
+    EnterCriticalSection(mutex);
     return 0;
 }
 
 static inline int pthread_mutex_unlock(pthread_mutex_t *const mutex) {
-    ReleaseSRWLockExclusive(mutex);
+    LeaveCriticalSection(mutex);
     return 0;
 }
 
@@ -116,7 +117,7 @@ static inline int pthread_cond_destroy(pthread_cond_t *const cond) {
 static inline int pthread_cond_wait(pthread_cond_t *const cond,
                                     pthread_mutex_t *const mutex)
 {
-    return !SleepConditionVariableSRW(cond, mutex, INFINITE, 0);
+    return !SleepConditionVariableCS(cond, mutex, INFINITE);
 }
 
 static inline int pthread_cond_signal(pthread_cond_t *const cond) {
