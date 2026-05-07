@@ -85,6 +85,24 @@ COLD int dav1d_pthread_join(pthread_t *const thread, void **const res) {
 COLD int dav1d_pthread_once(pthread_once_t *const once_control,
                             void (*const init_routine)(void))
 {
+#if _WIN32_WINNT < 0x0600
+    LONG expected = 0;
+    if (InterlockedCompareExchange(once_control, 1L, expected) == expected) {
+        init_routine();
+        InterlockedExchange(once_control, 2L);
+        return 0;
+    }
+
+    for (;;) {
+        LONG state = InterlockedCompareExchange(once_control, 2L, 2L);
+        if (state == 2L)
+            break;
+
+        SwitchToThread();
+    }
+
+    return 0;
+#else
     BOOL pending = FALSE;
 
     if (InitOnceBeginInitialize(once_control, 0, &pending, NULL) != TRUE)
@@ -94,6 +112,7 @@ COLD int dav1d_pthread_once(pthread_once_t *const once_control,
         init_routine();
 
     return !InitOnceComplete(once_control, 0, NULL);
+#endif
 }
 
 #endif
