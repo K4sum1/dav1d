@@ -108,7 +108,7 @@ have_posix_memalign = false
 have_memalign = false
 have_aligned_alloc = false
 if host_machine.system() == 'windows'
-    cdata.set('_WIN32_WINNT',           '0x0601')
+    cdata.set('_WIN32_WINNT',           '0x0501')
     cdata.set('UNICODE',                1) # Define to 1 for Unicode (Wide Chars) APIs
     cdata.set('_UNICODE',               1) # Define to 1 for Unicode (Wide Chars) APIs
     cdata.set('__USE_MINGW_ANSI_STDIO', 1) # Define to force use of MinGW printf
@@ -127,6 +127,8 @@ if host_machine.system() == 'windows'
     elif host_machine.cpu_family() == 'x86' or host_machine.cpu_family() == 'arm'
         if cc.get_argument_syntax() == 'msvc'
             optional_link_arguments += '/largeaddressaware'
+            optional_link_arguments += '/SUBSYSTEM:CONSOLE,5.1'
+            optional_link_arguments += '/opt:REF,ICF'
         else
             optional_link_arguments += '-Wl,--dynamicbase,--nxcompat,--tsaware,--large-address-aware'
         endif
@@ -301,7 +303,13 @@ else
     optional_arguments += [
       '-wd4028', # parameter different from declaration
       '-wd4090', # broken with arrays of pointers
-      '-wd4996'  # use of POSIX functions
+      '-wd4996',  # use of POSIX functions
+      '-O2', # Optimizations flags from Lun3r
+      '-Ob2ity-',
+      '-GS-',
+      '-GFAT',
+      '-Qpar',
+      '-Qfast_transcendentals'
     ]
 endif
 
