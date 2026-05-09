@@ -46,7 +46,11 @@ typedef struct {
     unsigned stack_size;
 } pthread_attr_t;
 
+#if _WIN32_WINNT < 0x0600
 typedef CRITICAL_SECTION pthread_mutex_t;
+#else
+typedef SRWLOCK pthread_mutex_t;
+#endif
 typedef CONDITION_VARIABLE pthread_cond_t;
 typedef INIT_ONCE pthread_once_t;
 
@@ -81,6 +85,7 @@ static inline int pthread_attr_setstacksize(pthread_attr_t *const attr,
     return 0;
 }
 
+#if _WIN32_WINNT < 0x0600
 static inline int pthread_mutex_init(pthread_mutex_t *const mutex,
                                      const void *const attr)
 {
@@ -102,6 +107,28 @@ static inline int pthread_mutex_unlock(pthread_mutex_t *const mutex) {
     LeaveCriticalSection(mutex);
     return 0;
 }
+#else
+static inline int pthread_mutex_init(pthread_mutex_t *const mutex,
+                                     const void *const attr)
+{
+    InitializeSRWLock(mutex);
+    return 0;
+}
+
+static inline int pthread_mutex_destroy(pthread_mutex_t *const mutex) {
+    return 0;
+}
+
+static inline int pthread_mutex_lock(pthread_mutex_t *const mutex) {
+    AcquireSRWLockExclusive(mutex);
+    return 0;
+}
+
+static inline int pthread_mutex_unlock(pthread_mutex_t *const mutex) {
+    ReleaseSRWLockExclusive(mutex);
+    return 0;
+}
+#endif
 
 static inline int pthread_cond_init(pthread_cond_t *const cond,
                                     const void *const attr)
@@ -117,7 +144,11 @@ static inline int pthread_cond_destroy(pthread_cond_t *const cond) {
 static inline int pthread_cond_wait(pthread_cond_t *const cond,
                                     pthread_mutex_t *const mutex)
 {
+#if _WIN32_WINNT < 0x0600
     return !SleepConditionVariableCS(cond, mutex, INFINITE);
+#else
+    return !SleepConditionVariableSRW(cond, mutex, INFINITE, 0);
+#endif
 }
 
 static inline int pthread_cond_signal(pthread_cond_t *const cond) {
