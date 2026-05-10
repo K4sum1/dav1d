@@ -108,7 +108,7 @@ have_posix_memalign = false
 have_memalign = false
 have_aligned_alloc = false
 if host_machine.system() == 'windows'
-    cdata.set('_WIN32_WINNT',           '0x0601')
+#    cdata.set('_WIN32_WINNT',           '0x0601') Should be covered by default of 0x600
     cdata.set('UNICODE',                1) # Define to 1 for Unicode (Wide Chars) APIs
     cdata.set('_UNICODE',               1) # Define to 1 for Unicode (Wide Chars) APIs
     cdata.set('__USE_MINGW_ANSI_STDIO', 1) # Define to force use of MinGW printf
