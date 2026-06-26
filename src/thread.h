@@ -57,10 +57,10 @@ typedef CRITICAL_SECTION pthread_mutex_t;
 typedef struct pthread_cond_t {
     void *Ptr;
 } pthread_cond_t;
-typedef volatile LONG pthread_once_t;
-#define MY_PTHREAD_ONCE_INIT  0
-#define MY_PTHREAD_ONCE_INPROGRESS 1
-#define MY_PTHREAD_ONCE_DONE 2
+typedef union pthread_once_t  {
+    void * Ptr;    ///< For the Windows 6.0+ native functions
+    LONG state;    ///< For the pre-Windows 6.0 compat code
+} pthread_once_t;
 
 void dav1d_init_thread(void);
 void dav1d_set_thread_name(const wchar_t *name);

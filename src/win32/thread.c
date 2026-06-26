@@ -85,39 +85,15 @@ COLD int dav1d_pthread_join(pthread_t *const thread, void **const res) {
 COLD int dav1d_pthread_once(pthread_once_t *const once_control,
                             void (*const init_routine)(void))
 {
-  LONG state;
+    BOOL pending = FALSE;
 
-  /*
-    Do "dirty" read to find out if initialization is already done, to
-    save an interlocked operation in common case. Memory barriers are ensured by
-    Visual C++ volatile implementation.
-  */
-  if (*once_control == MY_PTHREAD_ONCE_DONE)
-    return 0;
+    if (InitOnceBeginInitialize(once_control, 0, &pending, NULL) != TRUE)
+        return 1;
 
-  state= InterlockedCompareExchange(once_control, MY_PTHREAD_ONCE_INPROGRESS,
-                                        MY_PTHREAD_ONCE_INIT);
+    if (pending == TRUE)
+        init_routine();
 
-  switch(state)
-  {
-  case MY_PTHREAD_ONCE_INIT:
-    /* This is initializer thread */
-    (*init_routine)();
-    *once_control= MY_PTHREAD_ONCE_DONE;
-    break;
-
-  case MY_PTHREAD_ONCE_INPROGRESS:
-    /* init_routine in progress. Wait for its completion */
-    while(*once_control == MY_PTHREAD_ONCE_INPROGRESS)
-    {
-      Sleep(1);
-    }
-    break;
-  case MY_PTHREAD_ONCE_DONE:
-    /* Nothing to do */
-    break;
-  }
-  return 0;
+    return !InitOnceComplete(once_control, 0, NULL);
 }
 
 #endif
