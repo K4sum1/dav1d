@@ -46,7 +46,6 @@ typedef struct {
     unsigned stack_size;
 } pthread_attr_t;
 
-typedef SRWLOCK pthread_mutex_t;
 typedef CRITICAL_SECTION pthread_mutex_t;
 typedef volatile LONG pthread_once_t;
 #define MY_PTHREAD_ONCE_INIT  0
@@ -299,7 +298,7 @@ static inline int pthread_cond_destroy(pthread_cond_t *const cond) {
 static inline int pthread_cond_wait(pthread_cond_t *const cond,
                                     pthread_mutex_t *const mutex)
 {
-    return !SleepConditionVariableSRW(cond, mutex, INFINITE, 0);
+    return !SleepConditionVariableCS(cond, mutex, INFINITE);
 }
 
 static inline int pthread_cond_signal(pthread_cond_t *const cond) {
