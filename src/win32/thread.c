@@ -563,4 +563,69 @@ Return Value:
         }
     }
 }
+
+
+
+void
+InitializeXPConditionVariable(pthread_cond_t *cv)
+{
+	cv->waiters_count = 0;
+	InitializeCriticalSection(&(cv->waiters_count_lock));
+	cv->events_[C_SIGNAL] = CreateEvent (NULL, FALSE, FALSE, NULL);
+	cv->events_[C_BROADCAST] = CreateEvent (NULL, TRUE, FALSE, NULL);
+}
+
+void
+DeleteXPConditionVariable(pthread_cond_t *cv)
+{
+	CloseHandle(cv->events_[C_BROADCAST]);
+	CloseHandle(cv->events_[C_SIGNAL]);
+	DeleteCriticalSection(&(cv->waiters_count_lock));
+}
+
+int
+SleepXPConditionVariable(pthread_cond_t *cv, pthread_mutex_t *mtx)
+{
+	int result, last_waiter;
+
+	EnterCriticalSection(&cv->waiters_count_lock);
+	cv->waiters_count++;
+	LeaveCriticalSection(&cv->waiters_count_lock);
+	LeaveCriticalSection (mtx);
+	result = WaitForMultipleObjects(2, cv->events_, FALSE, INFINITE);
+	if (result==-1) {
+		result = GetLastError();
+	}
+	EnterCriticalSection(&cv->waiters_count_lock);
+	cv->waiters_count--;
+	last_waiter = result == (C_SIGNAL + C_BROADCAST && (cv->waiters_count == 0));
+	LeaveCriticalSection(&cv->waiters_count_lock);
+	if (last_waiter)
+		ResetEvent(cv->events_[C_BROADCAST]);
+	EnterCriticalSection (mtx);
+	return result;
+}
+
+void
+WakeXPConditionVariable(pthread_cond_t *cv)
+{
+	int have_waiters;
+	EnterCriticalSection(&cv->waiters_count_lock);
+	have_waiters = cv->waiters_count > 0;
+	LeaveCriticalSection(&cv->waiters_count_lock);
+	if (have_waiters)
+		SetEvent(cv->events_[C_SIGNAL]);
+}
+
+void
+WakeAllXPConditionVariable(pthread_cond_t *cv)
+{
+	int have_waiters;
+	EnterCriticalSection(&cv->waiters_count_lock);
+	have_waiters = cv->waiters_count > 0;
+	LeaveCriticalSection(&cv->waiters_count_lock);
+	if (have_waiters)
+		SetEvent (cv->events_[C_BROADCAST]);
+}
+
 #endif
