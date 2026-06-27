@@ -47,7 +47,10 @@ typedef struct {
 } pthread_attr_t;
 
 typedef CRITICAL_SECTION pthread_mutex_t;
-typedef INIT_ONCE pthread_once_t;
+typedef volatile LONG pthread_once_t;
+#define MY_PTHREAD_ONCE_INIT  0
+#define MY_PTHREAD_ONCE_INPROGRESS 1
+#define MY_PTHREAD_ONCE_DONE 2
 
 enum {
 	C_SIGNAL = 0,
