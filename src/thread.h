@@ -47,8 +47,29 @@ typedef struct {
 } pthread_attr_t;
 
 typedef CRITICAL_SECTION pthread_mutex_t;
-typedef CONDITION_VARIABLE pthread_cond_t;
 typedef INIT_ONCE pthread_once_t;
+
+enum {
+	C_SIGNAL = 0,
+	C_BROADCAST = 1,
+	C_MAX_EVENTS = 2
+};
+typedef struct
+{
+	u_int waiters_count;
+	CRITICAL_SECTION waiters_count_lock;
+	HANDLE events_[C_MAX_EVENTS];
+} pthread_cond_t;
+void InitializeXPConditionVariable(pthread_cond_t *);
+void DeleteXPConditionVariable(pthread_cond_t *);
+int SleepXPConditionVariable(pthread_cond_t *, pthread_mutex_t *);
+void WakeXPConditionVariable(pthread_cond_t *);
+void WakeAllXPConditionVariable(pthread_cond_t *);
+#define InitializeConditionVariable(cond) InitializeXPConditionVariable(cond)
+#define DeleteConditionVariable(cond) DeleteXPConditionVariable(cond)
+#define SleepConditionVariableCS(cond, mtx, time) SleepXPConditionVariable(cond, mtx)
+#define WakeConditionVariable(cond) WakeXPConditionVariable(cond)
+#define WakeAllConditionVariable(cond) WakeAllXPConditionVariable(cond)
 
 void dav1d_init_thread(void);
 void dav1d_set_thread_name(const wchar_t *name);
@@ -111,6 +132,7 @@ static inline int pthread_cond_init(pthread_cond_t *const cond,
 }
 
 static inline int pthread_cond_destroy(pthread_cond_t *const cond) {
+    DeleteConditionVariable(cond);
     return 0;
 }
 
